@@ -1,61 +1,141 @@
-grammar Transpilador;
-
+﻿grammar Transpilador;
 
 programa
-    : classDef EOF
+    : packageDecl? importDecl* classDef EOF
+    ;
+
+packageDecl
+    : 'package' qualifiedName ';'
+    ;
+
+importDecl
+    : 'import' 'static'? qualifiedName ('.' '*')? ';'
+    ;
+
+qualifiedName
+    : anyName ('.' anyName)*
+    ;
+
+anyName
+    : IDENTIFIER
+    | 'assertEquals'
+    | 'driver'
+    | 'Duration'
+    | 'By'
     ;
 
 classDef
-    : 'public' 'class' IDENTIFIER '{' metodoDef* '}'
+    : 'public' 'class' IDENTIFIER '{' miembro* '}'
+    ;
+
+miembro
+    : campoDecl
+    | metodoDef
+    ;
+
+campoDecl
+    : anyName anyName ';'
+    ;
+
+tipo
+    : anyName
     ;
 
 metodoDef
-    : '@Test'
-      'public' 'void' IDENTIFIER '(' ')' (('throws' IDENTIFIER))?
+    : anotacion
+      ('public' | 'private' | 'protected')? 'final'?
+      ('void' | tipo) IDENTIFIER '(' params? ')'
       '{' sentencia* '}'
     ;
 
+anotacion
+    : '@Test'
+    | '@BeforeEach'
+    | '@AfterEach'
+    ;
+
+params
+    : param (',' param)*
+    ;
+
+param
+    : tipo IDENTIFIER
+    ;
+
 sentencia
-    : navegar
-    | clickPorId
-    | clickPorCss
-    | escribirPorId
-    | asercion
+    : assertSentencia ';'
+    | varDecl
+    | ifSentencia
+    | exprSentencia ';'
+    ;
+
+varDecl
+    : tipo IDENTIFIER '=' expr ';'
+    ;
+
+ifSentencia
+    : 'if' '(' ifCond ')' '{' sentencia* '}'
     ;
 
 
-navegar
-    : 'driver' '.' 'get' '(' STRING ')' ';'
+ifCond
+    : anyName '!=' 'null'
+    | anyName '==' 'null'
+    | expr
     ;
 
-
-clickPorId
-    : 'driver' '.' 'findElement' '(' 'By' '.' 'id' '(' STRING ')' ')' '.' 'click' '(' ')' ';'
+assertSentencia
+    : 'assertEquals' '(' expr ',' expr ')'
     ;
 
-
-clickPorCss
-    : 'driver' '.' 'findElement' '(' 'By' '.' 'cssSelector' '(' STRING ')' ')' '.' 'click' '(' ')' ';'
+exprSentencia
+    : asignacion
+    | llamada
     ;
 
-
-escribirPorId
-    : 'driver' '.' 'findElement' '(' 'By' '.' 'id' '(' STRING ')' ')' '.' 'sendKeys' '(' STRING ')' ';'
-    ;
-
-
-asercion
-    : 'Assert' '.' 'assertEquals' '(' expr ',' expr ')' ';'
+asignacion
+    : anyName '=' expr
     ;
 
 expr
-    : STRING
+    : llamada
+    | 'new' IDENTIFIER '(' argList? ')'
+    | STRING
+    | IDENTIFIER
+    | 'null'
+    ;
+
+llamada
+    : receptor accion+
+    ;
+
+receptor
+    : 'driver'
     | IDENTIFIER
     ;
 
+accion
+    : '.' IDENTIFIER '(' argList? ')'
+    ;
 
-STRING      : '"' (~["\r\n])* '"' ;
-IDENTIFIER  : [a-zA-Z_][a-zA-Z_0-9]* ;
-WS          : [ \t\r\n]+ -> skip ;
-COMMENT     : '//' ~[\r\n]* -> skip ;
+argList
+    : arg (',' arg)*
+    ;
+
+arg
+    : expr
+    | byExpr
+    | 'Duration' '.' IDENTIFIER '(' NUMBER ')'
+    ;
+
+byExpr
+    : 'By' '.' ('id' | 'name' | 'cssSelector') '(' STRING ')'
+    ;
+
+STRING        : '"' (~["\r\n])* '"' ;
+NUMBER        : [0-9]+ ;
+IDENTIFIER    : [a-zA-Z_][a-zA-Z_0-9]* ;
+WS            : [ \t\r\n]+ -> skip ;
+COMMENT       : '//' ~[\r\n]* -> skip ;
 BLOCK_COMMENT : '/*' .*? '*/' -> skip ;
+NEQ           : '!=' ;

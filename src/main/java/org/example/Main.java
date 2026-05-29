@@ -14,7 +14,7 @@ public class Main {
         if (args.length > 0) {
             inputPath = args[0];
         } else {
-            inputPath = "LoginTest.java";
+            inputPath = "UsingSeleniumTest.java";
         }
 
         File inputFile = new File(inputPath);
@@ -24,7 +24,11 @@ public class Main {
         }
 
 
-        CharStream input = CharStreams.fromFileName(inputPath);
+        byte[] fileBytes = Files.readAllBytes(Path.of(inputPath));
+        if (fileBytes.length >= 3 && fileBytes[0] == (byte)0xEF && fileBytes[1] == (byte)0xBB && fileBytes[2] == (byte)0xBF) {
+            fileBytes = java.util.Arrays.copyOfRange(fileBytes, 3, fileBytes.length);
+        }
+        CharStream input = CharStreams.fromString(new String(fileBytes, java.nio.charset.StandardCharsets.UTF_8));
 
         TranspiladorLexer lexer = new TranspiladorLexer(input);
         lexer.removeErrorListeners();
